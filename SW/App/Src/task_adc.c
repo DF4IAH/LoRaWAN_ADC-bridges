@@ -237,6 +237,9 @@ uint8_t adc_i2c1_getPair(volatile int32_t* ch_a_raw, volatile int32_t* ch_b_raw)
   }
   osDelay(10UL);
 
+  /* Clear any pending DRDY */
+  xEventGroupClearBits(adcEventGroupHandle, EG_I2CADC__DRDY);
+
   /* Enable CS for conversion start */
   {
     const uint8_t csBuf[1] = { 0x16U };
@@ -263,8 +266,10 @@ uint8_t adc_i2c1_getPair(volatile int32_t* ch_a_raw, volatile int32_t* ch_b_raw)
     }
   }
 
+#if 0
   /* Disable power for bridge sensors */
   HAL_GPIO_WritePin(GPIO_SW_BRIDGE_EN_GPIO_Port, GPIO_SW_BRIDGE_EN_Pin, GPIO_PIN_RESET);
+#endif
 
   /* Disable CS for conversion stop */
   {
@@ -275,8 +280,10 @@ uint8_t adc_i2c1_getPair(volatile int32_t* ch_a_raw, volatile int32_t* ch_b_raw)
 
   /* Channel B */
 
+#if 0
   /* Enable power for bridge sensors */
   HAL_GPIO_WritePin(GPIO_SW_BRIDGE_EN_GPIO_Port, GPIO_SW_BRIDGE_EN_Pin, GPIO_PIN_SET);
+#endif
 
   /* Set to channel B */
   {
@@ -284,6 +291,9 @@ uint8_t adc_i2c1_getPair(volatile int32_t* ch_a_raw, volatile int32_t* ch_b_raw)
     i2cSequenceWriteLong(&hi2c1, i2c1_BSemHandle, I2C1_PORT_ADC, 0x02, sizeof(ctrl2Buf), ctrl2Buf);
   }
   osDelay(10UL);
+
+  /* Clear any pending DRDY */
+  xEventGroupClearBits(adcEventGroupHandle, EG_I2CADC__DRDY);
 
   /* Enable CS for conversion start */
   {
