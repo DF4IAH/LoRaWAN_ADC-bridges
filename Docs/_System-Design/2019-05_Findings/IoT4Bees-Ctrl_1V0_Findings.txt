@@ -1,0 +1,15 @@
+=========================
+Findings of IoT4Bees-Ctrl
+=========================
+
+
+- PCB-board house: use ENIG instead of HASL
+- PMIC 1.2V: try to find another chip with these features but other package
+- PMIC 1.2V: move towards the center of the board (reflow wind turbulences at the edges)
+- Power switch: U1801 - do not use IC above 3.3V, use (MOS)FETs instead
+- Power switch: every enable for those power switches to be pulled down by 2M ohms.
+- Put 100nF to each IC power pin, not to far away from those pins
+
+
+
+<EOF>

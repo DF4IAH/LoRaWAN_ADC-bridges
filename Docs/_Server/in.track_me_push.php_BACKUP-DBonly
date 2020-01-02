@@ -1,0 +1,198 @@
+<?php
+
+$outH = fopen('file:///tmp/php.out', 'w');
+
+/* if started from commandline, wrap parameters to $_POST and $_GET */
+if (!isset($_SERVER["HTTP_HOST"])) {
+	$postAry = array();
+
+	//parse_str($argv[1], $_GET);
+	//parse_str($argv[1], $_POST);
+
+	$usrPwd = "track_me:So§Let5MeIn";
+	$auth   = "Authorization: Basic ";
+	$auth  .= base64_encode($usrPwd);
+	$auth  .= "\r\n";
+
+	$inH = fopen('php://stdin','r');
+	while (!feof($inH)) {
+      		$postAry[] = fgets($inH);
+	}
+	fclose($inH);
+
+	$stat = print_r($postAry, TRUE);
+        fputs($outH, $stat);
+
+	$json = $postAry[9];
+	$appAry = json_decode($json, TRUE);
+	$stat = print_r($appAry, TRUE);
+	fputs($outH, $stat);
+
+	if (!strcmp($auth, $postAry[4])) {
+		fputs($outH, "User/PWD OK\r\n");
+
+		//string openssl_encrypt ( string $data , string $method , string $key [, int $options = 0 [, string $iv = "" [, string &$tag = NULL [, string $aad = "" [, int $tag_length = 16 ]]]]] );
+		$tsKeyCmp = ((0x0392ea84 + ($appAry['payload_fields']['ts'] & 0x7fffffff)) % 0x17ef23ab) ^ ((0x339dc627 + ($appAry['payload_fields']['ts'] & 0x07ffffff) * 7) % 0x2a29e2cc);
+
+		//fprintf($outH, "tsKeyCM  = %x\r\n", $appAry['payload_fields']['cm']);
+		//fprintf($outH, "tsKeyCmp = %x\r\n", $tsKeyCmp);
+
+		if ($appAry['payload_fields']['cm'] == $tsKeyCmp && $appAry['payload_fields']['latitude'] && $appAry['payload_fields']['longitude']) {
+			fputs($outH, "UNLOCKED - now processing data\r\n");
+
+			// Database access
+                        $dbconn = pg_connect("host=localhost dbname=track_me user=track_me_push password=Push1And.Go");
+
+			// First: handle devs table
+                        $query = "SELECT id, dev_id  FROM devs  WHERE dev_eui = '" . $appAry['hardware_serial'] . "'";
+                        $result = pg_query($query);
+			if (!$result) {
+				fprintf($outH, "SQL-Error: %s\r\n", pg_last_error());
+                		fprintf($outH, "Query was: %s\r\n", $query);
+				die('PQSQL query error');
+			}
+
+			$rc = pg_num_rows($result);
+			if ($rc == 0) {
+				pg_free_result($result);
+
+				// Insert new device
+				$query = "INSERT INTO devs(dev_id, dev_eui)  VALUES('" . $appAry['dev_id'] . "', '" . $appAry['hardware_serial'] . "');";
+				$result = pg_query($query);
+				//fprintf($outH, "SQL-Error: %s\r\n", pg_last_error());
+				//fprintf($outH, "Query was: %s\r\n", $query);
+
+			} else {
+				// Get Device IDs
+				$line = pg_fetch_array($result, null, PGSQL_ASSOC);
+				$db_dev__id	= $line['id'];
+				$db_dev__dev_id	= $line['dev_id'];
+
+				fprintf($outH, "compare old dev_id=%s with new dev_id=%s\r\n", $db_dev__dev_id, $appAry['dev_id']);
+
+				if (strcmp($db_dev__dev_id, $appAry['dev_id'])) {
+					pg_free_result($result);
+
+					// Update dev_id and timestamp
+					$query = "UPDATE devs  SET ts_last = now(), dev_id = '" . $appAry['dev_id'] . "'  WHERE id = " . $db_dev__id . ";";
+					$result = pg_query($query);
+					//fprintf($outH, "SQL-Error: %s\r\n", pg_last_error());
+					//fprintf($outH, "Query was: %s\r\n", $query);
+
+				} else {
+					// Update timestamp
+                                        $query = "UPDATE devs  SET ts_last = now()  WHERE id = " . $db_dev__id . ";";
+                                        $result = pg_query($query);
+                                        //fprintf($outH, "SQL-Error: %s\r\n", pg_last_error());
+                                        //fprintf($outH, "Query was: %s\r\n", $query);
+				}
+			}
+			pg_free_result($result);
+
+			// Second: handle trks table
+			$db_trks__lat		= $appAry['payload_fields']['latitude'];
+			$db_trks__lon		= $appAry['payload_fields']['longitude'];
+			$db_trks__alt		= $appAry['payload_fields']['altitude'];
+			$db_trks__accuracy	= $appAry['payload_fields']['accuracy'];
+			$db_trks__spd		= $appAry['payload_fields']['speed'];
+			$db_trks__crs		= $appAry['payload_fields']['course'];
+			$db_trks__vspd		= $appAry['payload_fields']['vertspeed'];
+			$db_trks__temp		= $appAry['payload_fields']['temp'];
+			$db_trks__rh		= $appAry['payload_fields']['hygro'];
+			$db_trks__baro		= $appAry['payload_fields']['baro'];
+			$db_trks__dust025	= $appAry['payload_fields']['dust025'];
+			$db_trks__dust100	= $appAry['payload_fields']['dust100'];
+			$db_trks__sievert	= $appAry['payload_fields']['sievert'];
+			$db_trks__vbat		= $appAry['payload_fields']['vbat'];
+			$db_trks__ibat		= $appAry['payload_fields']['ibat'];
+
+			$query  = "INSERT INTO trks(devs_fk, lat, lon, accuracy, alt, spd, crs, vspd, temp, rh, baro, dust025, dust100, sievert, vbat, ibat)  ";
+			$query .= "VALUES(" . $db_dev__id . ", " . $db_trks__lat . ", " . $db_trks__lon . ", " . $db_trks__accuracy;
+
+			if ($db_trks__alt) {
+				$query	.= ", " . $db_trks__alt;
+			} else {
+				$query	.= ", NULL";
+			}
+
+			if ($db_trks__spd) {
+				$query  .= ", " . $db_trks__spd;
+			} else {
+				$query  .= ", NULL";
+			}
+
+			if ($db_trks__crs) {
+				$query  .= ", " . $db_trks__crs;
+			} else {
+				$query  .= ", NULL";
+			}
+
+			if ($db_trks__vspd) {
+				$query  .= ", " . $db_trks__vspd;
+			} else {
+				$query  .= ", NULL";
+			}
+
+			if ($db_trks__temp) {
+				$query  .= ", " . $db_trks__temp;
+			} else {
+				$query  .= ", NULL";
+			}
+
+			if ($db_trks__rh) {
+				$query  .= ", " . $db_trks__rh;
+			} else {
+				$query  .= ", NULL";
+			}
+
+			if ($db_trks__baro) {
+				$query  .= ", " . $db_trks__baro;
+			} else {
+				$query  .= ", NULL";
+			}
+
+			if ($db_trks__dust025) {
+				$query  .= ", " . $db_trks__dust025;
+			} else {
+				$query  .= ", NULL";
+			}
+
+			if ($db_trks__dust100) {
+				$query  .= ", " . $db_trks__dust100;
+			} else {
+				$query  .= ", NULL";
+			}
+
+			if ($db_trks__sievert) {
+				$query  .= ", " . $db_trks__sievert;
+			} else {
+				$query  .= ", NULL";
+			}
+
+			if ($db_trks__vbat) {
+				$query  .= ", " . $db_trks__vbat;
+			} else {
+				$query  .= ", NULL";
+			}
+
+			if ($db_trks__ibat) {
+				$query  .= ", " . $db_trks__ibat;				
+			} else {
+				$query  .= ", NULL";
+			}
+
+			$query .= ");";
+
+			$result = pg_query($query);
+			fprintf($outH, "SQL-Error: %s\r\n", pg_last_error());
+			fprintf($outH, "Query was: %s\r\n", $query);
+
+			pg_free_result($result);
+			pg_close($dbconn);
+		}
+	}
+}
+fclose($outH);
+
+?>
+

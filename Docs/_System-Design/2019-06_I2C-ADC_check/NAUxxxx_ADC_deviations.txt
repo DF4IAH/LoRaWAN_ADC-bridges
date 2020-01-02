@@ -1,0 +1,10 @@
+10 Iterationen					mean_ch0		mean_ch1		dev_ch0			dev_ch1
+
+0x15 Clock-Clock:	0x0			0x34c91a		0x34c910		105 95 115		89 70 122
+0x15 Clock-Clock:	0x1			0x34c9d5		0x34c9a9		119 84 72		99 70 165
+0x15 Clock-Clock:	0x2			0x34c8f0		0x34c9ff		150 79	74		80 110 61
+0x15 Clock-Clock:	0x3			0x34ca81		0x34c98f		120 123	70		66 75 48
+
+
+
+<EOF>

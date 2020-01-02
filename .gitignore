@@ -1,0 +1,82 @@
+# Prerequisites
+*.d
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+#*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# Build environment
+.mxproject
+language.settings.xml
+IoT4Bees-Ctrl.elf.launch
+
+# Eagle
+*.lck
+*.?#?
+
+# DiskStation
+@eaDir/
+
+# ... more
+Debug/
+Release/
+CAD/Eagle.zip
+CAD/Eagle/7.x.zip
+CAD/Eagle/image/IoT4Bees-Ctrl_1V0.dxf
+CAD/Eagle/image/IoT4Bees-Ctrl_1V0-Top.png
+CAD/Eagle/IoT4Bees-Ctrl_1V0_2019-03-19.zip
+CAD/Eagle/image/IoT4Bees-Ctrl_1V0.png
+CAD/Eagle/gerber/IoT4Bees-Ctrl_1V0_2019-03-19.zip
+CAD/Eagle/bmp.scr
+SW-Installationen/en.STM32CubeMX_v5-2-0.zip
+SW-Installationen/en.STM32CubeMX_v5-2-0/Readme.html
+SW-Installationen/en.STM32CubeMX_v5-2-0/SetupSTM32CubeMX-5.2.0.linux
+SW-Installationen/Atollic_V9.3.0.zip
+SW-Installationen/Atollic_V9.3.0/Atollic_V9.3.0/Atollic_TrueSTUDIO_for_STM32_linux_x86_64_v9.3.0_20190212-0734.tar.gz
+SW-Installationen/Atollic_V9.3.0/Atollic_V9.3.0/stm32wb55cc.pdf

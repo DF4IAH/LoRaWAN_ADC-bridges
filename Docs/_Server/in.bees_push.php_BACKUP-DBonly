@@ -1,0 +1,215 @@
+<?php
+
+$outH = fopen('file:///tmp/php_Bees.out', 'w');
+
+/* if started from commandline, wrap parameters to $_POST and $_GET */
+if (!isset($_SERVER["HTTP_HOST"])) {
+  $postAry = array();
+
+  //parse_str($argv[1], $_GET);
+  //parse_str($argv[1], $_POST);
+
+  $usrPwd  = "bees:So§Let5MeIn";
+  $auth    = "Authorization: Basic ";
+  $auth   .= base64_encode($usrPwd);
+  $auth   .= "\r\n";
+
+  $inH = fopen('php://stdin','r');
+  while (!feof($inH)) {
+    $postAry[] = fgets($inH);
+  }
+  fclose($inH);
+
+  $stat = print_r($postAry, TRUE);
+  fputs($outH, $stat);
+
+  $json = $postAry[9];
+  $appAry = json_decode($json, TRUE);
+  $stat = print_r($appAry, TRUE);
+  fputs($outH, $stat);
+
+  //fputs($outH, $auth);
+
+  if (!strcmp($auth, $postAry[4])) {
+    fputs($outH, "User/PWD OK\r\n");
+
+    //string openssl_encrypt ( string $data , string $method , string $key [, int $options = 0 [, string $iv = "" [, string &$tag = NULL [, string $aad = "" [, int $tag_length = 16 ]]]]] );
+    $tsKeyCmp     = ((0x0392ea84 + ($appAry['payload_fields']['mote_ts'] & 0x7fffffff)) % 0x17ef23ab) ^ ((0x339dc627 + ($appAry['payload_fields']['mote_ts'] & 0x07ffffff) * 7) % 0x2a29e2cc);
+//decoded.mote_cm = ((0x0392ea84 + (                     decoded.mote_ts & 0x7fffffff)) % 0x17ef23ab) ^ ((0x339dc627 + (                     decoded.mote_ts & 0x07ffffff) * 7) % 0x2a29e2cc);
+
+    //fprintf($outH, "tsKeyCM  = %x\r\n", $appAry['payload_fields']['mote_cm']);
+    //fprintf($outH, "tsKeyCmp = %x\r\n", $tsKeyCmp);
+
+    if (($appAry['payload_fields']['mote_cm'] == $tsKeyCmp) && $appAry['payload_fields']['mote_flags']) {
+      /* Database access */
+      {
+        fputs($outH, "UNLOCKED - now processing data\r\n");
+
+        // Database access
+        $dbconn = pg_connect("host=localhost dbname=bees user=bees_push password=Push1And.Go");
+
+        // First: handle devs table
+        $query = "SELECT id, dev_id  FROM devs  WHERE dev_eui = '" . $appAry['hardware_serial'] . "';";
+        $result = pg_query($query);
+        if (!$result) {
+          fprintf($outH, "SQL-Error: %s\r\n", pg_last_error());
+          fprintf($outH, "Query was: %s\r\n", $query);
+          die('PQSQL query error');
+        }
+
+        $rc = pg_num_rows($result);
+        if ($rc == 0) {
+          pg_free_result($result);
+
+          // Insert new device
+          $query = "INSERT INTO devs(dev_id, dev_eui, app_id)  VALUES('" . $appAry['dev_id'] . "', '" . $appAry['hardware_serial'] . "', '" . $appAry['app_id'] . "');";
+          $result = pg_query($query);
+          fprintf($outH, "SQL-Error: %s\r\n", pg_last_error());
+          fprintf($outH, "Query was: %s\r\n", $query);
+
+        } else {
+          // Get Device IDs
+          $line                 = pg_fetch_array($result, null, PGSQL_ASSOC);
+          $db_dev__id           = $line['id'];
+          $db_dev__dev_id       = $line['dev_id'];
+
+          fprintf($outH, "compare old dev_id=%s with new dev_id=%s\r\n", $db_dev__dev_id, $appAry['dev_id']);
+
+          if (strcmp($db_dev__dev_id, $appAry['dev_id'])) {
+            pg_free_result($result);
+
+            // Update dev_id and timestamp
+            $query = "UPDATE devs  SET ts_last = now(), dev_id = '" . $appAry['dev_id'] . "'  WHERE id = " . $db_dev__id . ";";
+            $result = pg_query($query);
+            fprintf($outH, "SQL-Error: %s\r\n", pg_last_error());
+            fprintf($outH, "Query was: %s\r\n", $query);
+
+          } else {
+            // Update timestamp
+            $query = "UPDATE devs  SET ts_last = now()  WHERE id = " . $db_dev__id . ";";
+            $result = pg_query($query);
+            fprintf($outH, "SQL-Error: %s\r\n", pg_last_error());
+            fprintf($outH, "Query was: %s\r\n", $query);
+          }
+        }
+        pg_free_result($result);
+
+        // Second: handle msgs table
+        $db_msgs__ad_ch0_raw  = $appAry['payload_fields']['ad_ch0_raw'];
+        $db_msgs__ad_ch1_raw  = $appAry['payload_fields']['ad_ch1_raw'];
+        $db_msgs__ad_ch2_raw  = $appAry['payload_fields']['ad_ch2_raw'];
+        $db_msgs__ad_ch3_raw  = $appAry['payload_fields']['ad_ch3_raw'];
+        $db_msgs__ad_ch4_raw  = $appAry['payload_fields']['ad_ch4_raw'];
+        $db_msgs__ad_ch5_raw  = $appAry['payload_fields']['ad_ch5_raw'];
+        $db_msgs__ad_ch6_raw  = $appAry['payload_fields']['ad_ch6_raw'];
+        $db_msgs__ad_ch7_raw  = $appAry['payload_fields']['ad_ch7_raw'];
+        $db_msgs__i_bat       = $appAry['payload_fields']['i_bat'];
+        $db_msgs__v_bat       = $appAry['payload_fields']['v_bat'];
+        $db_msgs__v_aux1      = $appAry['payload_fields']['v_aux1'];
+        $db_msgs__v_aux2      = $appAry['payload_fields']['v_aux2'];
+        $db_msgs__v_aux3      = $appAry['payload_fields']['v_aux3'];
+        $db_msgs__wx_temp     = $appAry['payload_fields']['wx_temp'];
+        $db_msgs__wx_rh       = $appAry['payload_fields']['wx_rh'];
+        $db_msgs__wx_baro_a   = $appAry['payload_fields']['wx_baro_a'];
+	$db_msgs__gnss_lat    = $appAry['payload_fields']['latitude'];
+        $db_msgs__gnss_lon    = $appAry['payload_fields']['longitude'];
+        $db_msgs__gnss_alt    = $appAry['payload_fields']['altitude'];
+        $db_msgs__gnss_acc    = $appAry['payload_fields']['accuracy'];
+        $db_msgs__mote_flags  = $appAry['payload_fields']['mote_flags'];
+        $db_msgs__mote_ts     = $appAry['payload_fields']['mote_ts'];
+        $db_msgs__mote_ctr_up = $appAry['counter'];
+        $db_msgs__gw_frq      = $appAry['metadata']['frequency'];
+        $db_msgs__gw_sf       = $appAry['metadata']['data_rate'];
+        $db_msgs__gw_cnt      = count($appAry['metadata']['gateways']);
+        //$db_msgs__gw_id       = $appAry['metadata']['gateways'][0]['gtw_id'];
+        //$db_msgs__gw_dbm      = $appAry['metadata']['gateways'][0]['rssi'];
+        //$db_msgs__gw_snr      = $appAry['metadata']['gateways'][0]['snr'];
+        //$db_msgs__gw_lat      = $appAry['metadata']['gateways'][0]['latitude'];
+        //$db_msgs__gw_lon      = $appAry['metadata']['gateways'][0]['longitude'];
+        //$db_msgs__gw_alt      = $appAry['metadata']['gateways'][0]['altitude'];
+
+	$db_msgs__i_bat       = 0.0 + $db_msgs__i_bat;
+	$db_msgs__gw_alt      = 0.0 + $db_msgs__gw_alt;
+
+
+        $query  = "INSERT INTO msgs(devs_fk, ad_ch0_raw, ad_ch1_raw, ad_ch2_raw, ad_ch3_raw, ad_ch4_raw, ad_ch5_raw, ad_ch6_raw, ad_ch7_raw, i_bat, v_bat, v_aux1, v_aux2, v_aux3, wx_temp, wx_rh, wx_baro_a, gnss_lat, gnss_lon, gnss_alt_m, gnss_acc_m, mote_flags, mote_ts, mote_ctr_up, gw_frq, gw_sf, gw_cnt, gw_id_ary, gw_dbm_ary, gw_snr_ary, gw_lat_ary, gw_lon_ary, gw_alt_ary)  ";
+
+        $query .= "VALUES(" . $db_dev__id . ", " . $db_msgs__ad_ch0_raw . ", " . $db_msgs__ad_ch1_raw . ", " . $db_msgs__ad_ch2_raw . ", " . $db_msgs__ad_ch3_raw . ", " . $db_msgs__ad_ch4_raw . ", " . $db_msgs__ad_ch5_raw . ", " . $db_msgs__ad_ch6_raw . ", " . $db_msgs__ad_ch7_raw . ", ";
+        $query .= $db_msgs__i_bat . ", " . $db_msgs__v_bat . ", " . $db_msgs__v_aux1 . ", " . $db_msgs__v_aux2 . ", " . $db_msgs__v_aux3 . ", ";
+	$query .= $db_msgs__wx_temp . ", " . $db_msgs__wx_rh . ", " . $db_msgs__wx_baro_a . ", ";
+	$query .= $db_msgs__gnss_lat . ", " . $db_msgs__gnss_lon . ", " . $db_msgs__gnss_alt . ", " . $db_msgs__gnss_acc . ", ";
+	$query .= $db_msgs__mote_flags . ", to_timestamp(" . $db_msgs__mote_ts . " / 1000), " . $db_msgs__mote_ctr_up . ", ";
+        $query .= $db_msgs__gw_frq . ", '" . $db_msgs__gw_sf . "', ";
+	$query .= $db_msgs__gw_cnt . ", ";
+
+	$query .= "'{";
+	for ($gwIdx = 1; $gwIdx <= $db_msgs__gw_cnt; $gwIdx++) {
+          if ($gwIdx > 1) {
+            $query .= ", ";
+          }
+	  $query .= "\"" . $appAry['metadata']['gateways'][$gwIdx - 1]['gtw_id'] . "\"";
+	}
+	$query .= "}', ";
+
+        $query .= "'{";
+        for ($gwIdx = 1; $gwIdx <= $db_msgs__gw_cnt; $gwIdx++) {
+          if ($gwIdx > 1) {
+            $query .= ", ";
+          }
+          $query .= (0 + $appAry['metadata']['gateways'][$gwIdx - 1]['rssi']);
+        }
+        $query .= "}', ";
+
+        $query .= "'{";
+        for ($gwIdx = 1; $gwIdx <= $db_msgs__gw_cnt; $gwIdx++) {
+          if ($gwIdx > 1) {
+            $query .= ", ";
+          }
+          $query .= (0 + $appAry['metadata']['gateways'][$gwIdx - 1]['snr']);
+        }
+        $query .= "}', ";
+
+        $query .= "'{";
+        for ($gwIdx = 1; $gwIdx <= $db_msgs__gw_cnt; $gwIdx++) {
+          if ($gwIdx > 1) {
+            $query .= ", ";
+          }
+          $query .= (0 + $appAry['metadata']['gateways'][$gwIdx - 1]['latitude']);
+        }
+        $query .= "}', ";
+
+        $query .= "'{";
+        for ($gwIdx = 1; $gwIdx <= $db_msgs__gw_cnt; $gwIdx++) {
+          if ($gwIdx > 1) {
+            $query .= ", ";
+          }
+          $query .= (0 + $appAry['metadata']['gateways'][$gwIdx - 1]['longitude']);
+        }
+        $query .= "}', ";
+
+        $query .= "'{";
+        for ($gwIdx = 1; $gwIdx <= $db_msgs__gw_cnt; $gwIdx++) {
+          if ($gwIdx > 1) {
+            $query .= ", ";
+          }
+          $query .= (0 + $appAry['metadata']['gateways'][$gwIdx - 1]['altitude']);
+        }
+        $query .= "}'";
+
+        $query .= ");";
+
+        $result = pg_query($query);
+	if(!$result) {
+          fprintf($outH, "SQL-Error: %s\r\n", pg_last_error());
+          fprintf($outH, "Query was: %s\r\n", $query);
+  	}
+
+        pg_free_result($result);
+        pg_close($dbconn);
+      }
+    }
+  }
+}
+fclose($outH);
+
+?>
