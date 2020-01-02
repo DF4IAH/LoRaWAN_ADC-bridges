@@ -25,6 +25,7 @@
 #include "task.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <event_groups.h>
 #include "device_portexp.h"
 #include "task_adc.h"
 /* USER CODE END Includes */
