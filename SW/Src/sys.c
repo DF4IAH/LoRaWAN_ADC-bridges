@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : gpio.h
-  * Description        : This file contains all the functions prototypes for 
-  *                      the gpio  
+  * File Name          : SYS.c
+  * Description        : This file provides code for the configuration
+  *                      of the SYS instances.
   ******************************************************************************
   * @attention
   *
@@ -17,44 +17,31 @@
   ******************************************************************************
   */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __gpio_H
-#define __gpio_H
-#ifdef __cplusplus
- extern "C" {
-#endif
-
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
+#include "sys.h"
 
-/* USER CODE BEGIN Includes */
+/* USER CODE BEGIN 0 */
 
-/* USER CODE END Includes */
+/* USER CODE END 0 */
 
-/* USER CODE BEGIN Private defines */
+/* SYS init function */
+void MX_SYS_Init(void)
+{
+  PWR_PVDTypeDef sConfigPVD = {0};
 
-/* USER CODE END Private defines */
+  /** PVD Configuration 
+  */
+  sConfigPVD.PVDLevel = PWR_PVDLEVEL_0;
+  sConfigPVD.Mode = PWR_PVD_MODE_NORMAL;
+  HAL_PWR_ConfigPVD(&sConfigPVD);
+  /** Enable the PVD Output 
+  */
+  HAL_PWR_EnablePVD();
 
-void MX_GPIO_Init(void);
-
-/* USER CODE BEGIN Prototypes */
-void MX_GPIO_Init_WKUP_REED(void);
-
-void MX_GPIO_DeInit(void);
-
-/* USER CODE END Prototypes */
-
-#ifdef __cplusplus
 }
-#endif
-#endif /*__ pinoutConfig_H */
 
-/**
-  * @}
-  */
+/* USER CODE BEGIN 1 */
 
-/**
-  * @}
-  */
+/* USER CODE END 1 */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
