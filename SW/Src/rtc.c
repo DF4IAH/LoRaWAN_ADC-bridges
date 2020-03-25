@@ -47,18 +47,6 @@ void MX_RTC_Init(void)
   {
     Error_Handler();
   }
-  /** Enable the WakeUp 
-  */
-#ifdef GNSS_EXTRA
-  /* 30 seconds */
-  if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc,  30UL - 1UL, RTC_WAKEUPCLOCK_CK_SPRE_16BITS) != HAL_OK)
-#else
-  /* 10 minutes */
-  if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 600UL - 1UL, RTC_WAKEUPCLOCK_CK_SPRE_16BITS) != HAL_OK)
-#endif
-  {
-    Error_Handler();
-  }
 
 }
 

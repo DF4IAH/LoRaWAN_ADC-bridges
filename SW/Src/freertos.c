@@ -119,11 +119,11 @@ osMutexId trackMeApplUpDataMutexHandle;
 osMutexId trackMeApplDnDataMutexHandle;
 osMutexId iot4BeesApplUpDataMutexHandle;
 osMutexId iot4BeesApplDnDataMutexHandle;
+osSemaphoreId usart1Tx_BSemHandle;
+osSemaphoreId usart1Rx_BSemHandle;
 osSemaphoreId i2c1_BSemHandle;
 osSemaphoreId i2c2_BSemHandle;
 osSemaphoreId spi3_BSemHandle;
-osSemaphoreId usart1Tx_BSemHandle;
-osSemaphoreId usart1Rx_BSemHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -241,7 +241,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
        
   /* USER CODE END Init */
-
   /* Create the mutex(es) */
   /* definition and creation of trackMeApplUpDataMutex */
   osMutexDef(trackMeApplUpDataMutex);
@@ -269,6 +268,14 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_MUTEX */
 
   /* Create the semaphores(s) */
+  /* definition and creation of usart1Tx_BSem */
+  osSemaphoreDef(usart1Tx_BSem);
+  usart1Tx_BSemHandle = osSemaphoreCreate(osSemaphore(usart1Tx_BSem), 1);
+
+  /* definition and creation of usart1Rx_BSem */
+  osSemaphoreDef(usart1Rx_BSem);
+  usart1Rx_BSemHandle = osSemaphoreCreate(osSemaphore(usart1Rx_BSem), 1);
+
   /* definition and creation of i2c1_BSem */
   osSemaphoreDef(i2c1_BSem);
   i2c1_BSemHandle = osSemaphoreCreate(osSemaphore(i2c1_BSem), 1);
@@ -280,14 +287,6 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of spi3_BSem */
   osSemaphoreDef(spi3_BSem);
   spi3_BSemHandle = osSemaphoreCreate(osSemaphore(spi3_BSem), 1);
-
-  /* definition and creation of usart1Tx_BSem */
-  osSemaphoreDef(usart1Tx_BSem);
-  usart1Tx_BSemHandle = osSemaphoreCreate(osSemaphore(usart1Tx_BSem), 1);
-
-  /* definition and creation of usart1Rx_BSem */
-  osSemaphoreDef(usart1Rx_BSem);
-  usart1Rx_BSemHandle = osSemaphoreCreate(osSemaphore(usart1Rx_BSem), 1);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -525,7 +524,7 @@ void StartUsart1TxTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(300000UL);
+    osDelay(1);
   }
   /* USER CODE END StartUsart1TxTask */
 }
@@ -543,7 +542,7 @@ void StartUsart1RxTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(300000UL);
+    osDelay(1);
   }
   /* USER CODE END StartUsart1RxTask */
 }
@@ -558,12 +557,10 @@ void StartUsart1RxTask(void const * argument)
 void StartLorawanTask(void const * argument)
 {
   /* USER CODE BEGIN StartLorawanTask */
-  loRaWANLoraTaskInit();
-
   /* Infinite loop */
   for(;;)
   {
-    loRaWANLoraTaskLoop();
+    osDelay(1);
   }
   /* USER CODE END StartLorawanTask */
 }
@@ -578,12 +575,10 @@ void StartLorawanTask(void const * argument)
 void StartEspTask(void const * argument)
 {
   /* USER CODE BEGIN StartEspTask */
-  espTaskInit();
-
   /* Infinite loop */
   for(;;)
   {
-    espTaskLoop();
+    osDelay(1);
   }
   /* USER CODE END StartEspTask */
 }
@@ -598,12 +593,10 @@ void StartEspTask(void const * argument)
 void StartAdcTask(void const * argument)
 {
   /* USER CODE BEGIN StartAdcTask */
-  adcTaskInit();
-
   /* Infinite loop */
   for(;;)
   {
-    adcTaskLoop();
+    osDelay(1);
   }
   /* USER CODE END StartAdcTask */
 }
@@ -618,12 +611,10 @@ void StartAdcTask(void const * argument)
 void StartSoundTask(void const * argument)
 {
   /* USER CODE BEGIN StartSoundTask */
-  soundTaskInit();
-
   /* Infinite loop */
   for(;;)
   {
-    soundTaskLoop();
+    osDelay(1);
   }
   /* USER CODE END StartSoundTask */
 }
